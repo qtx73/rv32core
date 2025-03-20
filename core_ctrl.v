@@ -77,7 +77,7 @@ always @(*) begin
     op1 = 32'b0;
     op2 = 32'b0;
     alusel = ALU_ADD;
-    nextpc = pc + 4;
+    nextpc = pc;
     rd_data = 32'b0;
     d_mem_addr = 32'b0;
     d_mem_wen = 4'b0;
@@ -85,6 +85,7 @@ always @(*) begin
     branch_taken = 1'b0;
     
     if (active) begin
+        nextpc = pc + 4;
         case (opcode)
             R_TYPE: begin
                 // R-type instructions: Register-Register operations

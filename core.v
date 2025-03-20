@@ -18,7 +18,7 @@ core_fsm core_fsm (
     .active (active)
 );
 
-wire [31:0] pc;
+reg  [31:0] pc;
 wire [31:0] nextpc;
 assign i_mem_addr = active ? nextpc : pc;
 always @ (posedge clk or negedge rstn) begin
@@ -26,7 +26,7 @@ always @ (posedge clk or negedge rstn) begin
         pc <= 32'b0;
     end else begin
         if (active) begin
-            pc <= nextpc;
+            pc <= i_mem_addr;
         end else begin
             pc <= pc;
         end
@@ -38,11 +38,7 @@ always @ (posedge clk or negedge rstn) begin
     if (!rstn) begin
         ir <= 32'b0;
     end else begin
-        if (active) begin
-            ir <= i_mem_data;
-        end else begin
-            ir <= ir;
-        end
+        ir <= i_mem_data;
     end
 end
 
@@ -53,7 +49,7 @@ wire [4:0] rd_addr;
 wire [31:0] rd_data;
 wire [31:0] rs1_data;
 wire [31:0] rs2_data;
-core_regfile core_regfile (
+core_regfiles core_regfiles (
     .clk(clk),
     .rstn(rstn),
     .rs1_addr(rs1_addr),
@@ -65,6 +61,9 @@ core_regfile core_regfile (
     .rs2_data(rs2_data)
 );
 
+wire [3:0] alusel;
+wire [31:0] op1;
+wire [31:0] op2;
 wire [31:0] result;
 core_alu core_alu (
     .alusel(alusel),
