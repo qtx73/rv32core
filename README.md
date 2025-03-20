@@ -67,21 +67,23 @@ module core (
     input wire clk,
     input wire rstn,
     input wire start,
-    input wire [31:0] i_mem_data,
-    input wire [31:0] d_mem_data,
-    output wire [31:0] i_mem_addr,
-    output wire [31:0] d_mem_addr,
-    output wire [3:0]  d_mem_wen,
-    output wire [31:0] d_mem_wdata
+    input wire [31:0] instruction,
+    input wire [31:0] data_rdata,
+    output wire [31:0] instr_addr,
+    output wire [31:0] data_addr,
+    output wire        data_wen,
+    output wire [3:0]  data_be,
+    output wire [31:0] data_wdata
 );
 ```
 
 - `clk`: System clock
 - `rstn`: Active-low reset signal
 - `start`: Signal to start processor execution
-- `i_mem_data`: Data input from instruction memory
-- `d_mem_data`: Data input from data memory
-- `i_mem_addr`: Address output to instruction memory
-- `d_mem_addr`: Address output to data memory
-- `d_mem_wen`: Write enable output to data memory (4 bits for byte-level control)
-- `d_mem_wdata`: Data output to data memory
+- `instruction`: Data input from instruction memory
+- `data_rdata`: Data input from data memory
+- `instr_addr`: Address output to instruction memory
+- `data_addr`: Address output to data memory
+- `data_wen`: Write enable signal for data memory
+- `data_be`: Byte enable output to data memory (4 bits for byte-level control)
+- `data_wdata`: Data output to data memory

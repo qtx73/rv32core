@@ -4,7 +4,7 @@ module core_ctrl (
     input wire [31:0] ir,
     input wire [31:0] rs1_data,
     input wire [31:0] rs2_data,
-    input wire [31:0] d_mem_data,
+    input wire [31:0] data_rdata,
     input wire [31:0] result,
     output reg wreg,
     output reg [4:0] rs1_addr,
@@ -15,9 +15,10 @@ module core_ctrl (
     output reg [31:0] op1,
     output reg [31:0] op2,
     output reg [31:0] nextpc,
-    output reg [31:0] d_mem_addr,
-    output reg [3:0] d_mem_wen,
-    output reg [31:0] d_mem_wdata
+    output reg [31:0] data_addr,
+    output reg        data_wen,
+    output reg [3:0]  data_be,
+    output reg [31:0] data_wdata
 );
 
 // Instruction type masks
@@ -79,9 +80,10 @@ always @(*) begin
     alusel = ALU_ADD;
     nextpc = pc;
     rd_data = 32'b0;
-    d_mem_addr = 32'b0;
-    d_mem_wen = 4'b0;
-    d_mem_wdata = 32'b0;
+    data_addr = 32'b0;
+    data_wen = 1'b0;
+    data_be = 4'b0;
+    data_wdata = 32'b0;
     branch_taken = 1'b0;
     
     if (active) begin
@@ -132,47 +134,47 @@ always @(*) begin
                 op1 = rs1_data;
                 op2 = imm_i;
                 alusel = ALU_ADD;
-                d_mem_addr = {result[31:2], 2'b00}; // Word aligned address
+                data_addr = {result[31:2], 2'b00}; // Word aligned address
                 wreg = 1'b1;
                 
                 case (funct3)
                     3'b000: begin // LB
                         case (result[1:0])
-                            2'b00: rd_data = {{24{d_mem_data[7]}}, d_mem_data[7:0]};
-                            2'b01: rd_data = {{24{d_mem_data[15]}}, d_mem_data[15:8]};
-                            2'b10: rd_data = {{24{d_mem_data[23]}}, d_mem_data[23:16]};
-                            2'b11: rd_data = {{24{d_mem_data[31]}}, d_mem_data[31:24]};
+                            2'b00: rd_data = {{24{data_rdata[7]}}, data_rdata[7:0]};
+                            2'b01: rd_data = {{24{data_rdata[15]}}, data_rdata[15:8]};
+                            2'b10: rd_data = {{24{data_rdata[23]}}, data_rdata[23:16]};
+                            2'b11: rd_data = {{24{data_rdata[31]}}, data_rdata[31:24]};
                         endcase
                     end
                     
                     3'b001: begin // LH
                         case (result[1])
-                            1'b0: rd_data = {{16{d_mem_data[15]}}, d_mem_data[15:0]};
-                            1'b1: rd_data = {{16{d_mem_data[31]}}, d_mem_data[31:16]};
+                            1'b0: rd_data = {{16{data_rdata[15]}}, data_rdata[15:0]};
+                            1'b1: rd_data = {{16{data_rdata[31]}}, data_rdata[31:16]};
                         endcase
                     end
                     
                     3'b010: begin // LW
-                        rd_data = d_mem_data;
+                        rd_data = data_rdata;
                     end
                     
                     3'b100: begin // LBU
                         case (result[1:0])
-                            2'b00: rd_data = {24'b0, d_mem_data[7:0]};
-                            2'b01: rd_data = {24'b0, d_mem_data[15:8]};
-                            2'b10: rd_data = {24'b0, d_mem_data[23:16]};
-                            2'b11: rd_data = {24'b0, d_mem_data[31:24]};
+                            2'b00: rd_data = {24'b0, data_rdata[7:0]};
+                            2'b01: rd_data = {24'b0, data_rdata[15:8]};
+                            2'b10: rd_data = {24'b0, data_rdata[23:16]};
+                            2'b11: rd_data = {24'b0, data_rdata[31:24]};
                         endcase
                     end
                     
                     3'b101: begin // LHU
                         case (result[1])
-                            1'b0: rd_data = {16'b0, d_mem_data[15:0]};
-                            1'b1: rd_data = {16'b0, d_mem_data[31:16]};
+                            1'b0: rd_data = {16'b0, data_rdata[15:0]};
+                            1'b1: rd_data = {16'b0, data_rdata[31:16]};
                         endcase
                     end
                     
-                    default: rd_data = d_mem_data;
+                    default: rd_data = data_rdata;
                 endcase
             end
             
@@ -181,26 +183,30 @@ always @(*) begin
                 op1 = rs1_data;
                 op2 = imm_s;
                 alusel = ALU_ADD;
-                d_mem_addr = {result[31:2], 2'b00}; // Word aligned address
+                data_addr = {result[31:2], 2'b00}; // Word aligned address
                 
                 case (funct3)
                     3'b000: begin // SB
                         case (result[1:0])
                             2'b00: begin
-                                d_mem_wdata = {24'b0, rs2_data[7:0]};
-                                d_mem_wen = 4'b0001;
+                                data_wdata = {24'b0, rs2_data[7:0]};
+                                data_wen = 1'b1;
+                                data_be = 4'b0001;
                             end
                             2'b01: begin
-                                d_mem_wdata = {16'b0, rs2_data[7:0], 8'b0};
-                                d_mem_wen = 4'b0010;
+                                data_wdata = {16'b0, rs2_data[7:0], 8'b0};
+                                data_wen = 1'b1;
+                                data_be = 4'b0010;
                             end
                             2'b10: begin
-                                d_mem_wdata = {8'b0, rs2_data[7:0], 16'b0};
-                                d_mem_wen = 4'b0100;
+                                data_wdata = {8'b0, rs2_data[7:0], 16'b0};
+                                data_wen = 1'b1;
+                                data_be = 4'b0100;
                             end
                             2'b11: begin
-                                d_mem_wdata = {rs2_data[7:0], 24'b0};
-                                d_mem_wen = 4'b1000;
+                                data_wdata = {rs2_data[7:0], 24'b0};
+                                data_wen = 1'b1;
+                                data_be = 4'b1000;
                             end
                         endcase
                     end
@@ -208,24 +214,28 @@ always @(*) begin
                     3'b001: begin // SH
                         case (result[1])
                             1'b0: begin
-                                d_mem_wdata = {16'b0, rs2_data[15:0]};
-                                d_mem_wen = 4'b0011;
+                                data_wdata = {16'b0, rs2_data[15:0]};
+                                data_wen = 1'b1;
+                                data_be = 4'b0011;
                             end
                             1'b1: begin
-                                d_mem_wdata = {rs2_data[15:0], 16'b0};
-                                d_mem_wen = 4'b1100;
+                                data_wdata = {rs2_data[15:0], 16'b0};
+                                data_wen = 1'b1;
+                                data_be = 4'b1100;
                             end
                         endcase
                     end
                     
                     3'b010: begin // SW
-                        d_mem_wdata = rs2_data;
-                        d_mem_wen = 4'b1111;
+                        data_wdata = rs2_data;
+                        data_wen = 1'b1;
+                        data_be = 4'b1111;
                     end
                     
                     default: begin
-                        d_mem_wdata = 32'b0;
-                        d_mem_wen = 4'b0000;
+                        data_wdata = 32'b0;
+                        data_wen = 1'b0;
+                        data_be = 4'b0000;
                     end
                 endcase
             end

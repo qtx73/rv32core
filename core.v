@@ -2,12 +2,13 @@ module core (
     input wire clk,
     input wire rstn,
     input wire start,
-    input wire [31:0] i_mem_data,
-    input wire [31:0] d_mem_data,
-    output wire [31:0] i_mem_addr,
-    output wire [31:0] d_mem_addr,
-    output wire [3:0]  d_mem_wen,
-    output wire [31:0] d_mem_wdata
+    input wire [31:0] instruction,
+    input wire [31:0] data_rdata,
+    output wire [31:0] instr_addr,
+    output wire [31:0] data_addr,
+    output wire        data_wen,
+    output wire [3:0]  data_be,
+    output wire [31:0] data_wdata
 );
 
 wire active;
@@ -20,13 +21,13 @@ core_fsm core_fsm (
 
 reg  [31:0] pc;
 wire [31:0] nextpc;
-assign i_mem_addr = active ? nextpc : pc;
+assign instr_addr = active ? nextpc : pc;
 always @ (posedge clk or negedge rstn) begin
     if (!rstn) begin
         pc <= 32'b0;
     end else begin
         if (active) begin
-            pc <= i_mem_addr;
+            pc <= instr_addr;
         end else begin
             pc <= pc;
         end
@@ -38,7 +39,7 @@ always @ (posedge clk or negedge rstn) begin
     if (!rstn) begin
         ir <= 32'b0;
     end else begin
-        ir <= i_mem_data;
+        ir <= instruction;
     end
 end
 
@@ -78,7 +79,7 @@ core_ctrl core_ctrl (
     .ir(ir),
     .rs1_data(rs1_data),
     .rs2_data(rs2_data),
-    .d_mem_data(d_mem_data),
+    .data_rdata(data_rdata),
     .result(result),
     .wreg(wreg),
     .rs1_addr(rs1_addr),
@@ -89,9 +90,10 @@ core_ctrl core_ctrl (
     .op1(op1),
     .op2(op2),
     .nextpc(nextpc),
-    .d_mem_addr(d_mem_addr),
-    .d_mem_wen(d_mem_wen),
-    .d_mem_wdata(d_mem_wdata)
+    .data_addr(data_addr),
+    .data_wen(data_wen),
+    .data_be(data_be),
+    .data_wdata(data_wdata)
 );
 
 endmodule
