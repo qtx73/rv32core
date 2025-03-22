@@ -47,6 +47,12 @@ The pipeline uses the following registers to transfer data between stages:
 - Program Counter (PC) register
 - Instruction Register (IR)
 
+The core includes a stall mechanism that allows the pipeline to be temporarily halted:
+- When the `stall` signal is asserted, register updates and state transitions are suspended
+- PC and IR values are preserved during stall cycles
+- Register file writes are disabled during stall cycles
+- This allows the core to handle situations like memory access delays or hazards
+
 ### Memory Interface
 
 - **Instruction Memory**: Connected through i_mem_addr and i_mem_data
@@ -67,6 +73,7 @@ module core (
     input wire clk,
     input wire rstn,
     input wire start,
+    input wire stall,
     input wire [31:0] instruction,
     input wire [31:0] data_rdata,
     output wire [31:0] instr_addr,
@@ -80,6 +87,7 @@ module core (
 - `clk`: System clock
 - `rstn`: Active-low reset signal
 - `start`: Signal to start processor execution
+- `stall`: Signal to halt the pipeline and preserve state
 - `instruction`: Data input from instruction memory
 - `data_rdata`: Data input from data memory
 - `instr_addr`: Address output to instruction memory
