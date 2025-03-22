@@ -2,6 +2,7 @@ module core (
     input wire clk,
     input wire rstn,
     input wire start,
+    input wire stall,
     input wire [31:0] instruction,
     input wire [31:0] data_rdata,
     output wire [31:0] instr_addr,
@@ -16,6 +17,7 @@ core_fsm core_fsm (
     .clk(clk),
     .rstn(rstn),
     .start(start),
+    .stall(stall),
     .active (active)
 );
 
@@ -26,7 +28,7 @@ always @ (posedge clk or negedge rstn) begin
     if (!rstn) begin
         pc <= 32'b0;
     end else begin
-        if (active) begin
+        if (active && !stall) begin
             pc <= instr_addr;
         end else begin
             pc <= pc;
@@ -38,7 +40,7 @@ reg [31:0] ir;
 always @ (posedge clk or negedge rstn) begin
     if (!rstn) begin
         ir <= 32'b0;
-    end else begin
+    end else if (!stall) begin
         ir <= instruction;
     end
 end
@@ -55,7 +57,7 @@ core_regfiles core_regfiles (
     .rstn(rstn),
     .rs1_addr(rs1_addr),
     .rs2_addr(rs2_addr),
-    .wreg(wreg),
+    .wreg(wreg && !stall),
     .rd_addr(rd_addr),
     .rd_data(rd_data),
     .rs1_data(rs1_data),
@@ -74,7 +76,7 @@ core_alu core_alu (
 );
 
 core_ctrl core_ctrl (
-    .active(active),
+    .active(active && !stall),
     .pc(pc),
     .ir(ir),
     .rs1_data(rs1_data),

@@ -2,6 +2,7 @@ module core_fsm (
     input wire clk,
     input wire rstn,
     input wire start,
+    input wire stall,
     output reg active
 );
 
@@ -18,7 +19,7 @@ end
 always @ (posedge clk or negedge rstn) begin
     if (!rstn) begin
         active <= 1'b0;
-    end else begin
+    end else if (!stall) begin
         active <= nextstate;
     end
 end
